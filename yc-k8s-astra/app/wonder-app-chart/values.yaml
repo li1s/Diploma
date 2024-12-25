@@ -1,0 +1,8 @@
+image_frontend:
+  repository: "l1is/wonder_app"
+  tag: ""
+
+image:
+  tag: "latest"
+
+namespace: ""

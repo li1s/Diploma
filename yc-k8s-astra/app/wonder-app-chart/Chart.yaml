@@ -1,0 +1,7 @@
+apiVersion: v2
+name: wonder-app-chart
+description: My wonder-app-chart
+
+type: application
+
+version: 0.1.0
