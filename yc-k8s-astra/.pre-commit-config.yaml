@@ -1,0 +1,50 @@
+---
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v2.5.0
+    hooks:
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
+      - id: end-of-file-fixer
+      - id: mixed-line-ending
+      - id: detect-private-key
+      - id: check-added-large-files
+      - id: check-executables-have-shebangs
+      - id: check-symlinks
+      # - id: check-xml
+      - id: check-yaml
+      - id: check-json
+
+  - repo: https://github.com/jorisroovers/gitlint
+    rev: v0.14.0
+    hooks:
+      - id: gitlint
+        name: Check Git rules via gitlint
+        args: [-v, --ignore=body-is-missing, --msg-filename]
+
+  # - repo: https://github.com/adrienverge/yamllint.git
+  #   rev: v1.26.2
+  #   hooks:
+  #     - id: yamllint
+  #       name: Yaml validate with yamllint
+  #       args: [-c=.yamllint-config.yaml]
+
+  # - repo: git://github.com/detailyang/pre-commit-shell
+  #   rev: v1.0.6
+  #   hooks:
+  #     - id: shell-lint
+
+  - repo: https://github.com/antonbabenko/pre-commit-terraform
+    rev: v1.82.0
+    hooks:
+      - id: terraform_fmt
+      # Disabled until tflint update on agents
+      # - id: terraform_tflint
+
+  - repo: https://github.com/motet-a/jinjalint
+    rev: 01e0a4d8
+    hooks:
+      - id: jinjalint
+        name: Jinja validate with jinjalint
+        types: [file]
+        files: \.(j2)$
