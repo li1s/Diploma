@@ -1,0 +1,87 @@
+---
+- name: Deploy and Configure Astra Linux VM
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Create Persistent Volume Claim for Astra Linux VM
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: PersistentVolumeClaim
+          metadata:
+            name: astra-linux-pvc
+          spec:
+            accessModes:
+              - ReadWriteOnce
+            resources:
+              requests:
+                storage: 10Gi
+
+    - name: Create Virtual Machine for Astra Linux
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: kubevirt.io/v1alpha3
+          kind: VirtualMachine
+          metadata:
+            name: astra-linux-vm
+          spec:
+            running: true
+            template:
+              metadata:
+                labels:
+                  kubevirt.io/domain: astra-linux-vm
+              spec:
+                domain:
+                  devices:
+                    disks:
+                      - name: astra-disk
+                        disk:
+                          bus: virtio
+                    interfaces:
+                      - name: default
+                        bridge: {}
+                networks:
+                  - name: default
+                    pod: {}
+                volumes:
+                  - name: astra-disk
+                    persistentVolumeClaim:
+                      claimName: astra-linux-pvc
+                  - name: cloudinit-nocloud
+                cloudInitNoCloud:
+                  userData: |
+                    #cloud-config
+                    users:
+                    - name: l1is
+                      sudo: ALL=(ALL) NOPASSWD:ALL
+                      ssh_authorized_keys:
+                      - your_ssh_public_key_here
+                    packages:
+                      - nginx
+                      - curl
+                      - wget
+                    write_files:
+                      - path: /etc/apt/sources.list.d/astra.list
+                    content: |
+                      deb http://your-repo-url-here/ stable main contrib non-free
+                    runcmd:
+                      - apt-get update -y
+                      - apt-get install -y nginx curl wget
+                      - systemctl enable --now nginx
+                      - echo "Hello from Astra Linux!" > /var/www/html/index.html
+                resources:
+                  requests:
+                    memory: 2048Mi
+                    cpu: '2'
+
+    - name: Wait for VM to be ready
+      kubernetes.core.k8s_info:
+        kind: VirtualMachineInstance
+        namespace: "{{ vm_namespace }}"
+        name: astra-linux-vm
+      register: vm_status
+      until: vm_status.resources is defined and vm_status.resources['status']['ready'] | bool
+      retries: 30
+      delay: 5

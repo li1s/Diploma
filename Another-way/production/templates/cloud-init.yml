@@ -1,0 +1,19 @@
+#cloud-config
+users:
+  - name: ${username}
+    groups: sudo
+    shell: /bin/bash
+    sudo: ['ALL=(ALL) NOPASSWD:ALL']
+    ssh_authorized_keys:
+      - ${ssh_public_key}
+package_update: false
+package_upgrade: false
+packages: ${packages}
+bootcmd:
+  - sudo apt-get remove unattended-upgrades
+  - sudo systemctl stop apt-daily.timer
+  - sudo systemctl disable apt-daily.timer
+  - sudo systemctl stop apt-daily-upgrade.timer
+  - sudo systemctl disable apt-daily-upgrade.timer
+  - sudo systemctl disable apt-daily.service
+  - sudo systemctl daemon-reload

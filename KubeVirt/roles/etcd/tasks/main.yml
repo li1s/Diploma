@@ -1,0 +1,36 @@
+---
+- name: Установка необходимых пакетов
+  ansible.builtin.apt:
+    name:
+      - etcd
+    state: present
+
+- name: Настройка ETCD
+  ansible.builtin.copy:
+    dest: /etc/etcd/etcd.conf.yml
+    owner: etcd
+    group: etcd
+    mode: '0644'
+    content: |
+      name: etcd-{{ inventory_hostname }}
+      data-dir: /var/lib/etcd
+      initial-cluster-token: etcd-cluster-1
+      initial-cluster: '{{ groups['k8s_master'] | join(",") }}'
+      initial-cluster-state: new
+      listen-peer-urls: http://{{ ansible_host }}:2380
+      listen-client-urls: http://{{ ansible_host }}:2379
+      advertise-client-urls: http://{{ ansible_host }}:2379
+
+- name: Создание директории для данных ETCD
+  ansible.builtin.file:
+    path: /var/lib/etcd
+    state: directory
+    owner: etcd
+    group: etcd
+    mode: '0755'
+
+- name: Включение и запуск ETCD
+  ansible.builtin.systemd:
+    name: etcd
+    enabled: true
+    state: started

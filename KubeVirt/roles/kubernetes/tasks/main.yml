@@ -1,0 +1,59 @@
+---
+- name: Install some packages
+  ansible.builtin.apt:
+    name:
+      - apt-transport-https
+      - curl
+      - software-properties-common
+    state: present
+
+- name: Add GPG key Kubernetes
+  ansible.builtin.apt_key:
+    url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+    state: present
+
+- name: Add Kubernetes repositories
+  ansible.builtin.apt_repository:
+    repo: deb https://apt.kubernetes.io/ kubernetes-xenial main
+    state: present
+
+- name: Install Kubernetes components
+  ansible.builtin.apt:
+    name:
+      - kubelet
+      - kubeadm
+      - kubectl
+    state: present
+    update_cache: true
+
+- name: Generation token
+  ansible.builtin.command: kubeadm token create --print-join-command
+  register: join_command
+  when: inventory_hostname == groups['k8s_master'][0]
+  changed_when: join_command != 0
+
+- name: Извлечение токена и хэша
+  ansible.builtin.set_fact:
+    kubeadm_join_command: "{{ join_command.stdout }}"
+  when: inventory_hostname == groups['k8s_master'][0]
+
+- name: Инициализация кластера
+  ansible.builtin.command: kubeadm init --pod-network-cidr=192.168.0.0/16
+  when: inventory_hostname == groups['k8s_master'][0]
+
+- name: Настройка kubectl для обычного пользователя
+  ansible.builtin.command: >
+    mkdir -p $HOME/.kube &&
+    cp -i /etc/kubernetes/admin.conf $HOME/.kube/config &&
+    chown $(id -u):$(id -g) $HOME/.kube/config
+  when: inventory_hostname == groups['k8s_master'][0]
+
+- name: Установка сетевого плагина (Flannel)
+  kubernetes.core.k8s:
+    state: present
+    src: https://raw.githubusercontent.com/coreos/flannel/master/Documentation/k8s-manifests/kube-flannel.yml
+  when: inventory_hostname == groups['k8s_master'][0]
+
+- name: Добавление рабочих узлов в кластер
+  ansible.builtin.command: "{{ hostvars[groups['k8s_master'][0]].kubeadm_join_command }}"
+  when: inventory_hostname in groups['k8s_workers']

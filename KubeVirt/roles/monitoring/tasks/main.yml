@@ -1,0 +1,20 @@
+---
+- name: Install Prometheus and Grafana
+  ansible.builtin.command: >
+    helm repo add prometheus-community https://prometheus-community.github.io/helm-charts \
+    helm repo update \
+    helm install prometheus prometheus-community/kube-prometheus-stack \
+
+- name: Сonfiguration Prometheus
+  ansible.builtin.template:
+    src: prometheus-config.yml.j2
+    dest: /etc/prometheus/prometheus.yml
+  notify:
+    - Restart Prometheus
+
+- name: Сonfiguration Grafana
+  ansible.builtin.template:
+    src: grafana-config.yml.j2
+    dest: /etc/grafana/provisioning/dashboards/default.yaml
+  notify:
+    - Restart Grafana

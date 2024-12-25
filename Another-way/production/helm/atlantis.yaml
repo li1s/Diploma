@@ -1,0 +1,64 @@
+orgAllowlist: "github.com/slebedev/*"
+github:
+  user: slebedev
+  token: token
+  secret: secret
+
+service:
+  type: NodePort
+  type: ClusterIP
+
+ingress:
+  enabled: true
+  ingressClassName: nginx
+  labels: {}
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+  path: /
+  pathType: Prefix
+  host: atlantis.astralinux.slebedev.ru
+
+atlantisDataDirectory: /atlantis-data
+
+volumeClaim:
+  enabled: true
+  # -- Disk space available to check out repositories.
+  dataStorage: 2Gi
+  # -- Storage class name (if possible, use a resizable one).
+  storageClassName: "local-path"
+  accessModes: ["ReadWriteOnce"]
+
+environment:
+  ATLANTIS_EMOJI_REACTION: thumbsup
+  TF_CLI_CONFIG_FILE: "/tfcli/.terraformrc-custom"
+
+initConfig:
+  # -- Install providers/plugins into a path shared with the Atlantis pod.
+  enabled: true
+  image: alpine:latest
+  imagePullPolicy: IfNotPresent
+  # -- SharedDir is set as env var INIT_SHARED_DIR.
+  sharedDir: /tfcli
+  sharedDirReadOnly: true
+  workDir: /tmp
+  # -- Size for the shared volume.
+  sizeLimit: 10Mi
+  # -- Security context for the container.
+  containerSecurityContext: {}
+  # -- Script to run on the init container.
+  # @default -- Check values.yaml.
+  script: |
+    #!/bin/sh
+    set -eoux pipefail
+
+    cat > /tfcli/.terraformrc-custom <<EOL
+    provider_installation {
+      network_mirror {
+        url = "https://terraform-mirror.yandexcloud.net/"
+        include = ["registry.terraform.io/*/*"]
+      }
+      direct {
+        exclude = ["registry.terraform.io/*/*"]
+      }
+    }
+    EOL

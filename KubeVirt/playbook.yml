@@ -1,0 +1,11 @@
+---
+- name: Установка Kubernetes кластера
+  hosts: k8s
+  become: true
+
+  roles:
+    - etcd
+    - kubernetes
+    - monitoring
+    - helm
+    - kubevirt

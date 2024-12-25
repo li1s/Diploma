@@ -1,0 +1,10 @@
+---
+- name: Install Helm
+  ansible.builtin.uri: curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
+  register: my_output # <- Registers the command output.
+  changed_when: my_output.rc != 0
+
+- name: Configure Helm repositories
+  ansible.builtin.command: helm repo add stable https://charts.helm.sh/stable
+  register: my_output # <- Registers the command output.
+  changed_when: my_output.rc != 0

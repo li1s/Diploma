@@ -1,0 +1,41 @@
+all:
+  children:
+    bastion:
+      hosts:
+        bastion:
+          ansible_host: ${bastion.external_ip_address}
+      vars:
+        ansible_user: ${user}
+    hosts_control:
+      hosts:
+%{ for node, ip in controllers ~}
+        ${node}:
+          ansible_host: ${ip}
+          ip: ${ip}
+          access_ip: ${ip}
+%{ endfor ~}
+      vars:
+        ansible_user: ${user}
+    hosts_workers:
+      hosts:
+%{ for node, ip in workers ~}
+        ${node}:
+          ansible_host: ${ip}
+          ip: ${ip}
+          access_ip: ${ip}
+%{ endfor ~}
+      vars:
+        ansible_user: ${user}
+    kube_control_plane:
+      children:
+        hosts_control:
+    kube_node:
+      children:
+        hosts_workers:
+    etcd:
+      children:
+        hosts_control:
+    k8s_cluster:
+      children:
+        kube_control_plane:
+        kube_node:
